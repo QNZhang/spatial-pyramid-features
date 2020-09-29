@@ -146,7 +146,7 @@ class SpatialPyramidFeatures:
 
         l1_norm = np.linalg.norm(overall_histogram, 1)
 
-        if l1_norm in (0., np.nan):
+        if l1_norm in (0, 1, np.nan):
             return overall_histogram
 
         return overall_histogram/l1_norm
