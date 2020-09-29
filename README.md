@@ -27,7 +27,7 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 	```
 	The app used to create the dataset was [this one](https://github.com/giussepi/BACH_ICIAR_2018).
 	However, the important thing to keep in mind is that the app works with numpy arrays. We saved
-	our dataset as JSON files so you can take a to the loader here [utils/datasets/patchcamelyon.py](). About the format of the arrays:
+	our dataset as JSON files so you can take a to the loader here [utils/datasets/patchcamelyon.py](https://github.com/giussepi/spatial-pyramid-features/blob/master/utils/datasets/patchcamelyon.py). About the format of the arrays:
 
 	1. The features must be in the rows and the number of columns must represent the number of samples.
 
