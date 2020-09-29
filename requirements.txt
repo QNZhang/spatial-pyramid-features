@@ -1,5 +1,15 @@
 autopep8>=1.5.4
+fastprogress>=1.0.0
+git+git://github.com/giussepi/gutils.git
 ipython>=7.16.1
 jedi>=0.17.2
+matplotlib>=3.3.2
+numpy>=1.19.2
+onnxruntime>=1.4.0
+opencv-python-headless>=4.4.0.42
 pylint>=2.6.0
 pyflakes>=2.2.0
+scikit-learn>=0.23.2
+# sklearn-onnx
+skl2onnx>=1.7.0
+tqdm>=4.49.0

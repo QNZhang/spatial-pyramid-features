@@ -130,3 +130,7 @@ dmypy.json
 
 # emacs
 *~
+
+# generated data
+tmp
+datasets_dir
