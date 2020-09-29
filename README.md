@@ -36,6 +36,11 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 
 		<img src="doc_images/example_label_matrix.png" width="50%"/>
 
+5. Copy the settings template and configure it properly.
+
+	``` bash
+	cp settings.py.template settings.py
+	```
 
 ## Usage
 

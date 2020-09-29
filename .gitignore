@@ -134,3 +134,6 @@ dmypy.json
 # generated data
 tmp
 datasets_dir
+
+# local settings file
+settings.py
