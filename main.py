@@ -5,7 +5,7 @@ import numpy as np
 
 import settings
 from core.feature_extractors import SpatialPyramidFeatures
-from utils.datasets.patchcamelyon import DBhandler
+from utils.datasets.patchcamelyon import DBhandler, FeatsHandler
 
 
 np.random.seed(settings.NUMPY_RANDOM_SEED)
@@ -18,6 +18,12 @@ def main():
 if __name__ == '__main__':
     main()
 
-    spf = SpatialPyramidFeatures(DBhandler)
-    spf.create_codebook()
-    spf.create_spatial_pyramid_features()
+    # train_feats, train_labels, test_feats, test_labels = DBhandler()()
+
+    FeatsHandler().create_subsets(20, True)
+    train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
+
+    # spf = SpatialPyramidFeatures(DBhandler)
+    # # spf.create_codebook()
+    # # func:create_spatial_pyramid_features processed in 93547.0923 seconds
+    # spf.create_spatial_pyramid_features()

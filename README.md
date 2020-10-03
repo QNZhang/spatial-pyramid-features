@@ -61,3 +61,12 @@ from utils.datasets.patchcamelyon import FeatsHandler
 
 train_feats, train_labels, test_feats, test_labels = FeatsHandler()()
 ```
+
+### Create a subset of the spatial pyramid features dataset and load it
+``` python
+
+from utils.datasets.patchcamelyon import FeatsHandler
+
+FeatsHandler().create_subsets(percentage=20, verbose=True)
+train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
+```
