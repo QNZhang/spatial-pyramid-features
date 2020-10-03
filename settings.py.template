@@ -3,6 +3,8 @@
 
 import os
 
+from constants import Norm, Pooling
+
 
 ###############################################################################
 #                                   Datasets                                   #
@@ -25,7 +27,7 @@ TESTING_DATA_DIRECTORY_DATASET_PATH = os.path.join(
 #                                   General                                    #
 ###############################################################################
 GENERATED_DATA_DIRECTORY = "tmp"
-GENERATED_FEATS_FILENAME_TEMPLATE = 'spatial_pyramid_feats_{}_.json'
+GENERATED_FEATS_FILENAME_TEMPLATE = 'spatial_pyramid_feats_{}.json'
 CODEBOOK_ONNX = 'codebook.onnx'
 
 CHANNELS = 200  # number of features types
@@ -36,4 +38,9 @@ IMAGE_WIDTH = 32  # original image with
 IMAGE_HEIGHT = 32  # original image height
 
 NUMPY_RANDOM_SEED = 0
-PCA_N_COMPONENTS = 100  # set to -1 to not apply PCA
+RANDOM_STATE = 42
+PCA_N_COMPONENTS = 1000  # set to -1 to not apply PCA
+
+POOLING_METHOD = Pooling.SUM  # For more options see contants.py
+# Norm used during normalization
+NORM = Norm.L1  # For more options see contants.py

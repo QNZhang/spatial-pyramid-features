@@ -19,6 +19,8 @@ from skl2onnx import to_onnx
 from tqdm import tqdm
 
 import settings
+from constants import Pooling
+from core.exceptions import PoolingMethodInvalid
 from utils.descriptors import get_sift_descriptors
 from utils.utils import get_uint8_image, apply_pca
 
@@ -99,10 +101,26 @@ class SpatialPyramidFeatures:
 
                 if des is not None:
                     des = des if des.dtype == np.float32 else des.astype(np.float32)
-                    des_counter = Counter([
-                        codebook.run([label_name], {input_name: [des[row]]})[0][0]
-                        for row in range(des.shape[0])
-                    ])
+                    # Pooling operation #######################################
+                    # NOTE: Because we're using kmeans to assing each SIFT descriptor
+                    # to a class/cluster, all the encoded descriptor will be
+                    # 1-D zero vectors with only one of their elements set to 1. e.g.:
+                    # [0, 1, 0, 0, 0]
+                    # Thus, we don't need to create the encoded descriptor vector
+                    # representations to perform the pooling operations.
+                    # We can do that easily using the Counter and set python classes
+                    if settings.POOLING_METHOD == Pooling.SUM:
+                        des_counter = Counter([
+                            codebook.run([label_name], {input_name: [des[row]]})[0][0]
+                            for row in range(des.shape[0])
+                        ])
+                    elif settings.POOLING_METHOD == Pooling.MAX:
+                        des_counter = Counter(set(
+                            codebook.run([label_name], {input_name: [des[row]]})[0][0]
+                            for row in range(des.shape[0])
+                        ))
+                    else:
+                        raise PoolingMethodInvalid
 
                     for channel_id, counter in des_counter.items():
                         histogram[values_filled + idx + 2**(2*level) * channel_id] = counter * weight
@@ -144,12 +162,12 @@ class SpatialPyramidFeatures:
 
         overall_histogram = np.sum(descriptors, axis=0)
 
-        l1_norm = np.linalg.norm(overall_histogram, 1)
+        lp_norm = np.linalg.norm(overall_histogram, settings.NORM)
 
-        if l1_norm in (0, 1, np.nan):
+        if lp_norm in (0, 1, np.nan):
             return overall_histogram
 
-        return overall_histogram/l1_norm
+        return overall_histogram/lp_norm
 
     @timing
     def create_codebook(self, patches_percentage=.5, pyramid_levels=settings.PYRAMID_LEVELS,
@@ -191,7 +209,8 @@ class SpatialPyramidFeatures:
         print("Training KMeans classifer...")
         with tqdm(total=1) as pbar:
             # TODO: Maybe I need to use the get_histogram_intersection with Kmeans...
-            kmeans = KMeans(n_clusters=settings.CHANNELS, random_state=42).fit(selected_descriptors)
+            kmeans = KMeans(n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE)\
+                .fit(selected_descriptors)
             pbar.update(1)
 
         if save:

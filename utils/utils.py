@@ -52,4 +52,4 @@ def apply_pca(dataset):
     Returns:
         np.ndarray [samples, settings.PCA_N_COMPONENTS]
     """
-    return PCA(settings.PCA_N_COMPONENTS, random_state=42).fit_transform(dataset)
+    return PCA(settings.PCA_N_COMPONENTS, random_state=settings.RANDOM_STATE).fit_transform(dataset)
