@@ -134,7 +134,7 @@ class SpatialPyramidFeatures:
         """
         Process an image using mini-patches, calculates its overall concatenated-weighted
         histogram using the specified pyramid level and SIFT descriptors, and finally
-        returns its L1 normalised version
+        returns its Lp normalised version
 
         Args:
             img     (np.ndarray): image loaded using numpy
@@ -143,7 +143,7 @@ class SpatialPyramidFeatures:
             step_size      (int): stride
 
         Returns:
-            np.ndarray with length = round(channels * (1/3) * (4**(pyramid_levels+1)-1))]
+            [np.ndarray] with length = round(channels * (1/3) * (4**(pyramid_levels+1)-1))]
         """
         assert isinstance(img, np.ndarray)
         assert isinstance(pyramid_levels, int)
@@ -151,23 +151,21 @@ class SpatialPyramidFeatures:
         assert img.shape[1] >= patch_size
         assert step_size > 0
 
-        length = round(settings.CHANNELS * (1/3) * (4**(pyramid_levels+1)-1))
-        descriptors = np.empty([0, length], dtype=np.float32)
+        descriptors = list()
 
         for patch in get_patches(img, patch_size, patch_size-step_size):
-            descriptors = np.r_[
-                descriptors,
-                [self.get_concatenated_weighted_histogram(patch, pyramid_levels)]
-            ]
+            descriptors.append([self.get_concatenated_weighted_histogram(patch, pyramid_levels)])
+
+        descriptors = np.concatenate(descriptors)
 
         overall_histogram = np.sum(descriptors, axis=0)
 
         lp_norm = np.linalg.norm(overall_histogram, settings.NORM)
 
         if lp_norm in (0, 1, np.nan):
-            return overall_histogram
+            return [overall_histogram]
 
-        return overall_histogram/lp_norm
+        return [overall_histogram/lp_norm]
 
     @timing
     def create_codebook(self, patches_percentage=.5, pyramid_levels=settings.PYRAMID_LEVELS,
@@ -200,6 +198,7 @@ class SpatialPyramidFeatures:
             for patch in sample(patches, round(len(patches) * patches_percentage)):
                 descriptors = get_sift_descriptors(patch, pyramid_levels)
                 descriptors = get_unique_rows(descriptors)
+                # TODO: Use concatenation instead of np.r_
                 all_descriptors = np.r_[all_descriptors, descriptors]
 
             return all_descriptors
@@ -248,13 +247,11 @@ class SpatialPyramidFeatures:
         """
         assert isinstance(dataset, np.ndarray)
 
-        db_histograms = [self.process_image(
-            dataset[:, 0].reshape([settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT]))]
+        with tqdm_joblib(tqdm(total=dataset.shape[1])) as _:
+            db_histograms = Parallel(n_jobs=-1)(delayed(self.process_image)(
+                dataset[:, col].reshape([settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT])) for col in range(dataset.shape[1]))
 
-        for col in tqdm(range(1, dataset.shape[1])):
-            histogram = [self.process_image(
-                dataset[:, col].reshape([settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT]))]
-            db_histograms = np.r_[db_histograms, histogram]
+        db_histograms = np.concatenate(db_histograms)
 
         return db_histograms
 
