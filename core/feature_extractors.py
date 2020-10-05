@@ -10,10 +10,11 @@ import cv2 as cv
 # import matplotlib.pyplot as plt
 import numpy as np
 import onnxruntime as rt
-from fastprogress.fastprogress import master_bar, progress_bar
+from gutils.context_managers import tqdm_joblib
 from gutils.decorators import timing
 from gutils.image_processing import get_patches
 from gutils.numpy_ import get_unique_rows
+from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 from skl2onnx import to_onnx
 from tqdm import tqdm
@@ -63,7 +64,6 @@ class SpatialPyramidFeatures:
 
         return 1/2**(total_levels - current_level + 1)
 
-    # @timing
     def get_concatenated_weighted_histogram(self, img, pyramid_levels=settings.PYRAMID_LEVELS):
         """
         Process an image considering the pyramid level specified and returns its long
@@ -103,7 +103,7 @@ class SpatialPyramidFeatures:
                     des = des if des.dtype == np.float32 else des.astype(np.float32)
                     # Pooling operation #######################################
                     # NOTE: Because we're using kmeans to assing each SIFT descriptor
-                    # to a class/cluster, all the encoded descriptor will be
+                    # to a class/cluster, all the encoded descriptors will be
                     # 1-D zero vectors with only one of their elements set to 1. e.g.:
                     # [0, 1, 0, 0, 0]
                     # Thus, we don't need to create the encoded descriptor vector
@@ -173,6 +173,9 @@ class SpatialPyramidFeatures:
     def create_codebook(self, patches_percentage=.5, pyramid_levels=settings.PYRAMID_LEVELS,
                         patch_size=settings.PATCH_SIZE, step_size=settings.STEP_SIZE, save=True):
         """
+        Trains a Kmeans classifier/codebook using a percentage of the trainig featues and
+        saves it if save=True
+
         Args:
             patches_percentage  (float): percentage of patches to be used to build the codebook
             pyramid_levels        (int): number of pyramid levels to be used
@@ -188,33 +191,31 @@ class SpatialPyramidFeatures:
 
         training_feats = self.db_handler_class(True)()[0]
         selected_descriptors = np.empty([0, 128], dtype=np.float32)
-        mb = master_bar(range(training_feats.shape[1]))
 
-        print("Processing images")
-        # TODO: improve this with multiprocessing
-        for col in mb:
-            patches = [i for i in get_patches(training_feats[:, col].reshape(
-                [settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT]), patch_size, patch_size-step_size)]
+        def process_column(patch_size, step_size, img, img_width, img_height, pyramid_levels):
+            all_descriptors = np.empty([0, 128], dtype=np.float32)
+            patches = [i for i in get_patches(img.reshape(
+                [img_width, img_height]), patch_size, patch_size-step_size)]
 
-            for patch in progress_bar(sample(patches, round(len(patches) * patches_percentage)),
-                                      parent=mb):
-                mb.child.comment = 'Processing patches'
+            for patch in sample(patches, round(len(patches) * patches_percentage)):
                 descriptors = get_sift_descriptors(patch, pyramid_levels)
                 descriptors = get_unique_rows(descriptors)
-                selected_descriptors = np.r_[selected_descriptors, descriptors]
+                all_descriptors = np.r_[all_descriptors, descriptors]
 
-            mb.main_bar.comment = 'Processing images'
-        print("Image processing complete")
+            return all_descriptors
+
+        with tqdm_joblib(tqdm(desc="Processing images", total=training_feats.shape[1])) as _:
+            descriptors_list = Parallel(n_jobs=-1)(delayed(process_column)(
+                patch_size, step_size, training_feats[:, col], settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, pyramid_levels) for col in range(training_feats.shape[1]))
+
+        selected_descriptors = np.concatenate(descriptors_list)
 
         print("Training KMeans classifer...")
-        with tqdm(total=1) as pbar:
-            # TODO: Maybe I need to use the get_histogram_intersection with Kmeans...
-            kmeans = KMeans(n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE)\
-                .fit(selected_descriptors)
-            pbar.update(1)
+        kmeans = KMeans(
+            n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE, verbose=1)\
+            .fit(selected_descriptors)
 
         if save:
-            # RuntimeError: Only 2-D tensor(s) can be input(s).
             print("Saving codebook/Kmeans classifier")
             onx = to_onnx(kmeans, selected_descriptors[:1].astype(np.float32))
 

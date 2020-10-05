@@ -20,10 +20,11 @@ if __name__ == '__main__':
 
     # train_feats, train_labels, test_feats, test_labels = DBhandler()()
 
-    FeatsHandler().create_subsets(20, True)
-    train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
+    # FeatsHandler().create_subsets(20, True)
+    # train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
 
-    # spf = SpatialPyramidFeatures(DBhandler)
-    # # spf.create_codebook()
+    spf = SpatialPyramidFeatures(DBhandler)
+    spf.create_codebook()
+    # func:create_codebook processed in 5602.9401 seconds
     # # func:create_spatial_pyramid_features processed in 93547.0923 seconds
     # spf.create_spatial_pyramid_features()

@@ -1,8 +1,8 @@
 autopep8>=1.5.4
-fastprogress>=1.0.0
 git+git://github.com/giussepi/gutils.git
 ipython>=7.16.1
 jedi>=0.17.2
+joblib==0.16.0
 matplotlib>=3.3.2
 numpy>=1.19.2
 onnxruntime>=1.4.0
