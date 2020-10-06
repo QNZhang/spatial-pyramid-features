@@ -31,16 +31,22 @@ def get_sift_descriptors(img, pyramid_levels=settings.PYRAMID_LEVELS):
         .format(str(img.shape[:2]))
 
     sift = cv.SIFT_create()
-    descriptors = np.empty([0, 128], dtype=np.float32)
+    descriptors = list()
 
     for level in range(pyramid_levels+1):
         for patch in get_patches(get_uint8_image(img), min(img.shape[:2])//2**level):
             kp, des = sift.detectAndCompute(patch, None)
             if des is not None:
                 # print('{} descriptors at level {}'.format(des.shape[0], level))
-                descriptors = np.r_[descriptors, des]
+                # descriptors = np.r_[descriptors, des]
+                # TODO: add this tweak where necessary
+                descriptors.append([des] if len(des.shape) == 1 else des)
                 # patch = cv.drawKeypoints(patch, kp, patch, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
                 # plt.imshow(patch)
                 # plt.show()
 
-    return descriptors
+    # TODO: add  this where necesasry
+    if descriptors:
+        return np.concatenate(descriptors)
+
+    return np.empty([0, 128], dtype=np.float32)

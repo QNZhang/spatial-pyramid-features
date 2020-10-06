@@ -44,3 +44,4 @@ PCA_N_COMPONENTS = 1000  # set to -1 to not apply PCA
 POOLING_METHOD = Pooling.SUM  # For more options see contants.py
 # Norm used during normalization
 NORM = Norm.L1  # For more options see contants.py
+KMEANS_VERBOSE = 1  # set it to 0 not print kmeans progress

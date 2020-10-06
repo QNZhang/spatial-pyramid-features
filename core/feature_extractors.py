@@ -5,6 +5,7 @@ import os
 import json
 from collections import Counter
 from random import sample
+import warnings
 
 import cv2 as cv
 # import matplotlib.pyplot as plt
@@ -188,31 +189,38 @@ class SpatialPyramidFeatures:
         assert 0 < patches_percentage <= 1
 
         training_feats = self.db_handler_class(True)()[0]
-        selected_descriptors = np.empty([0, 128], dtype=np.float32)
 
         def process_column(patch_size, step_size, img, img_width, img_height, pyramid_levels):
-            all_descriptors = np.empty([0, 128], dtype=np.float32)
+            all_descriptors = []
             patches = [i for i in get_patches(img.reshape(
                 [img_width, img_height]), patch_size, patch_size-step_size)]
 
             for patch in sample(patches, round(len(patches) * patches_percentage)):
                 descriptors = get_sift_descriptors(patch, pyramid_levels)
-                descriptors = get_unique_rows(descriptors)
-                # TODO: Use concatenation instead of np.r_
-                all_descriptors = np.r_[all_descriptors, descriptors]
+                if descriptors.any():
+                    descriptors = get_unique_rows(descriptors)
+                    all_descriptors.append(descriptors)
 
-            return all_descriptors
+            if all_descriptors:
+                return np.concatenate(all_descriptors)
+
+            return np.empty([0, 128], dtype=np.float32)
 
         with tqdm_joblib(tqdm(desc="Processing images", total=training_feats.shape[1])) as _:
             descriptors_list = Parallel(n_jobs=-1)(delayed(process_column)(
                 patch_size, step_size, training_feats[:, col], settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, pyramid_levels) for col in range(training_feats.shape[1]))
 
+        # TODO: add this where necessary
+        if not descriptors_list:
+            warnings.warn(
+                'No descriptors were found; thus, the codebook could not be created', UserWarning)
+            return None
+
         selected_descriptors = np.concatenate(descriptors_list)
 
         print("Training KMeans classifer...")
-        kmeans = KMeans(
-            n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE, verbose=1)\
-            .fit(selected_descriptors)
+        kmeans = KMeans(n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE,
+                        verbose=settings.KMEANS_VERBOSE).fit(selected_descriptors)
 
         if save:
             print("Saving codebook/Kmeans classifier")
