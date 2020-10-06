@@ -32,7 +32,7 @@ CODEBOOK_ONNX = 'codebook.onnx'
 
 CHANNELS = 200  # number of features types
 PYRAMID_LEVELS = 2
-PATCH_SIZE = 16
+PATCH_SIZE = 16  # make sure that PATCH_SIZE % 2**PYRAMID_LEVELS == 0
 STEP_SIZE = 8
 IMAGE_WIDTH = 32  # original image with
 IMAGE_HEIGHT = 32  # original image height

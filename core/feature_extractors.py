@@ -40,7 +40,8 @@ class SpatialPyramidFeatures:
     """
 
     def __init__(self, db_handler_class):
-        """ Initializes the instance """
+        """ Verifies the consistency in settings values and initializes the instance """
+        assert settings.PATCH_SIZE % 2**settings.PYRAMID_LEVELS == 0
         self.db_handler_class = db_handler_class
 
     @staticmethod
@@ -92,7 +93,6 @@ class SpatialPyramidFeatures:
 
         for level in range(pyramid_levels+1):
             weight = self.get_spatial_pyramid_weight(level, pyramid_levels)
-            # TODO: verify somewhere that patch_size % 2**level == 0
             grid_cells_counter = 0
             for idx, patch in enumerate(
                     get_patches(get_uint8_image(img), min(img.shape[:2])//2**level)):
