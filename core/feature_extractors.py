@@ -161,6 +161,10 @@ class SpatialPyramidFeatures:
 
         overall_histogram = np.sum(descriptors, axis=0)
 
+        if np.count_nonzero(overall_histogram) == 0:
+            warnings.warn('An image without feature descriptors was processed', UserWarning)
+            return [overall_histogram]
+
         lp_norm = np.linalg.norm(overall_histogram, settings.NORM)
 
         if lp_norm in (0, 1, np.nan):
@@ -210,7 +214,6 @@ class SpatialPyramidFeatures:
             descriptors_list = Parallel(n_jobs=-1)(delayed(process_column)(
                 patch_size, step_size, training_feats[:, col], settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, pyramid_levels) for col in range(training_feats.shape[1]))
 
-        # TODO: add this where necessary
         if not descriptors_list:
             warnings.warn(
                 'No descriptors were found; thus, the codebook could not be created', UserWarning)
