@@ -23,6 +23,10 @@ class InMemoryDatasetItems(DatasetItemsTemplate):
 
         self.dataset = np.array(args[0])
 
+        # QuickTests
+        if settings.QUICK_TESTS > 0:
+            self.dataset = self.dataset[:, :settings.QUICK_TESTS]
+
     @property
     def num_samples(self):
         """ Returns the number of samples """
@@ -55,6 +59,11 @@ class LazyDatasetItems(DatasetItemsTemplate):
         assert isinstance(args[0][0], str)
 
         self.dataset = args[0]
+
+        # QuickTests
+        if settings.QUICK_TESTS > 0:
+            self.dataset = self.dataset[:settings.QUICK_TESTS]
+
         self.datase_num_samples = len(self.dataset)
 
     @property

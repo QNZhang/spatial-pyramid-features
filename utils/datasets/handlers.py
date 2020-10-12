@@ -51,6 +51,11 @@ class BaseDBHandler(BaseDBHandlerMixin):
             else:
                 getattr(self, attr_name)['labels'] = np.array(data['labels'])
 
+            # QuickTests
+            if settings.QUICK_TESTS > 0:
+                getattr(self, attr_name)['labels'] = \
+                    getattr(self, attr_name)['labels'][:, :settings.QUICK_TESTS]
+
             getattr(self, attr_name)['codes'] = data['codes']
 
 

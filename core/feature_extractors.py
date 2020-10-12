@@ -96,10 +96,8 @@ class SpatialPyramidFeatures:
         for level in range(pyramid_levels+1):
             weight = self.get_spatial_pyramid_weight(level, pyramid_levels)
             grid_cells_counter = 0
-            # TODO: get_patches works good only for squared images
-            # modify to return patches considering x and y dimensions
-            for idx, patch in enumerate(
-                    get_patches(get_uint8_image(img), min(img.shape[:2])//2**level)):
+
+            for idx, patch in enumerate(get_patches(get_uint8_image(img), img.shape[0]//2**level)):
                 kp, des = sift.detectAndCompute(patch, None)
                 grid_cells_counter = idx + 1
 
@@ -157,7 +155,7 @@ class SpatialPyramidFeatures:
 
         descriptors = list()
 
-        for patch in get_patches(img, patch_size, patch_size-step_size):
+        for patch in get_patches(img, patch_size, patch_overlapping=patch_size-step_size):
             descriptors.append([self.get_concatenated_weighted_histogram(patch, pyramid_levels)])
 
         descriptors = np.concatenate(descriptors)
@@ -176,8 +174,13 @@ class SpatialPyramidFeatures:
         return [overall_histogram/lp_norm]
 
     @timing
-    def create_codebook(self, patches_percentage=.5, pyramid_levels=settings.PYRAMID_LEVELS,
-                        patch_size=settings.PATCH_SIZE, step_size=settings.STEP_SIZE, save=True):
+    def create_codebook(
+            self,
+            patches_percentage=settings.CODEBOOK_PATCHES_PERCENTAGE,
+            pyramid_levels=settings.PYRAMID_LEVELS,
+            patch_size=settings.PATCH_SIZE,
+            step_size=settings.STEP_SIZE, save=True
+    ):
         """
         Trains a Kmeans classifier/codebook using a percentage of the trainig featues and
         saves it if save=True
@@ -185,7 +188,7 @@ class SpatialPyramidFeatures:
         Args:
             patches_percentage  (float): percentage of patches to be used to build the codebook
             pyramid_levels        (int): number of pyramid levels to be used
-            patch_size            (int): size of the patchw
+            patch_size            (int): size of the patch
             step_size             (int): stride
             save                 (bool): persist the model in a ONNX file
 
@@ -199,7 +202,8 @@ class SpatialPyramidFeatures:
 
         def process_column(patch_size, step_size, img, pyramid_levels):
             all_descriptors = []
-            patches = [i for i in get_patches(img, patch_size, patch_size-step_size)]
+            patches = [i for i in get_patches(
+                img, patch_size, patch_overlapping=patch_size-step_size)]
 
             for patch in sample(patches, round(len(patches) * patches_percentage)):
                 descriptors = get_sift_descriptors(patch, pyramid_levels)

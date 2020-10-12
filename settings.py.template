@@ -29,11 +29,16 @@ TESTING_DATA_DIRECTORY_DATASET_PATH = os.path.join(
 GENERATED_DATA_DIRECTORY = "tmp"
 GENERATED_FEATS_FILENAME_TEMPLATE = 'spatial_pyramid_feats_{}.json'
 CODEBOOK_ONNX = 'codebook.onnx'
+# percentage of patches to be used to build the codebook
+CODEBOOK_PATCHES_PERCENTAGE = .5
 
 CHANNELS = 200  # number of features types
 PYRAMID_LEVELS = 2
 PATCH_SIZE = 16  # make sure that PATCH_SIZE % 2**PYRAMID_LEVELS == 0
 STEP_SIZE = 8
+
+# Used to reconstruct the original image shape
+# on utils/datasets/items.py -> InMemoryDatasetItems.get_sample
 IMAGE_WIDTH = 32  # original image with
 IMAGE_HEIGHT = 32  # original image height
 
@@ -45,3 +50,12 @@ POOLING_METHOD = Pooling.SUM  # For more options see contants.py
 # Norm used during normalization
 NORM = Norm.L1  # For more options see contants.py
 KMEANS_VERBOSE = 1  # set it to 0 not print kmeans progress
+
+# Quick tests
+# Set the number of samples you want to work with to perform quick tests.
+# Set it to a number <= 0 to use all the samples provided for training and testing
+# The variables you can tweak to run quicker tests are:
+# + QUICK_TESTS, you can use a number > CHANNELS (this condition is not mandatory)
+# + CODEBOOK_PATCHES_PERCENTAGE you can increase it and decrease the QUICK_TESTS number
+# + PCA_N_COMPONENTS can be reduced
+QUICK_TESTS = -1  # 1001

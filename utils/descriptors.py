@@ -34,7 +34,7 @@ def get_sift_descriptors(img, pyramid_levels=settings.PYRAMID_LEVELS):
     descriptors = list()
 
     for level in range(pyramid_levels+1):
-        for patch in get_patches(get_uint8_image(img), min(img.shape[:2])//2**level):
+        for patch in get_patches(get_uint8_image(img), img.shape[0]//2**level):
             kp, des = sift.detectAndCompute(patch, None)
             if des is not None:
                 # print('{} descriptors at level {}'.format(des.shape[0], level))

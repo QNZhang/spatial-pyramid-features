@@ -65,9 +65,18 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 	```
 
 ## Important notes
+
+### Grey-scale images
 If the image dataset does not have the grey-scale PIL format ('L', ), then each sample will be automatically converted (in memory) before any processing. This behaviour is defined at:
 
     `utils/datasets/items.py -> LazyDatasetItems.get_sample`
+
+### Quick runs/tests
+If you want to perform quick tests by using only a fraction of your dataset just go to your `settings.py` file and set `QUICK_TESTS` with the number of samples you want to work with, e.g.:
+
+```python
+	QUICK_TESTS = 1001
+```
 
 ## Usage
 
