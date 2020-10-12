@@ -14,7 +14,7 @@ import onnxruntime as rt
 from gutils.context_managers import tqdm_joblib
 from gutils.decorators import timing
 from gutils.image_processing import get_patches
-from gutils.numpy_ import get_unique_rows
+from gutils.numpy_.numpy_ import get_unique_rows
 from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 from skl2onnx import to_onnx
@@ -23,6 +23,7 @@ from tqdm import tqdm
 import settings
 from constants import Pooling
 from core.exceptions import PoolingMethodInvalid
+from utils.datasets.templates import DatasetItemsTemplate
 from utils.descriptors import get_sift_descriptors
 from utils.utils import get_uint8_image, apply_pca
 
@@ -33,9 +34,9 @@ class SpatialPyramidFeatures:
     and save it in JSON files
 
     Usage:
-        from utils.datasets.patchcamelyon import DBhandler
+        from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
 
-        spf = SpatialPyramidFeatures(DBhandler)
+        spf = SpatialPyramidFeatures(InMemoryDBHandler)  # LazyDBHandler is another option
         spf.create_codebook()
         spf.create_spatial_pyramid_features()
     """
@@ -95,6 +96,8 @@ class SpatialPyramidFeatures:
         for level in range(pyramid_levels+1):
             weight = self.get_spatial_pyramid_weight(level, pyramid_levels)
             grid_cells_counter = 0
+            # TODO: get_patches works good only for squared images
+            # modify to return patches considering x and y dimensions
             for idx, patch in enumerate(
                     get_patches(get_uint8_image(img), min(img.shape[:2])//2**level)):
                 kp, des = sift.detectAndCompute(patch, None)
@@ -194,10 +197,9 @@ class SpatialPyramidFeatures:
 
         training_feats = self.db_handler_class(True)()[0]
 
-        def process_column(patch_size, step_size, img, img_width, img_height, pyramid_levels):
+        def process_column(patch_size, step_size, img, pyramid_levels):
             all_descriptors = []
-            patches = [i for i in get_patches(img.reshape(
-                [img_width, img_height]), patch_size, patch_size-step_size)]
+            patches = [i for i in get_patches(img, patch_size, patch_size-step_size)]
 
             for patch in sample(patches, round(len(patches) * patches_percentage)):
                 descriptors = get_sift_descriptors(patch, pyramid_levels)
@@ -210,9 +212,9 @@ class SpatialPyramidFeatures:
 
             return np.empty([0, 128], dtype=np.float32)
 
-        with tqdm_joblib(tqdm(desc="Processing images", total=training_feats.shape[1])) as _:
+        with tqdm_joblib(tqdm(desc="Processing images", total=training_feats.num_samples)):
             descriptors_list = Parallel(n_jobs=-1)(delayed(process_column)(
-                patch_size, step_size, training_feats[:, col], settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT, pyramid_levels) for col in range(training_feats.shape[1]))
+                patch_size, step_size, training_feats.get_sample(col), pyramid_levels) for col in range(training_feats.num_samples))
 
         if not descriptors_list:
             warnings.warn(
@@ -248,19 +250,19 @@ class SpatialPyramidFeatures:
 
     def __get_histograms(self, dataset):
         """
-        Gets the histograms/features from the dataset and resturns them
+        Gets the histograms/features from the dataset and returns them
 
         Args:
-            dataset (np.ndarray): Dataset
+            dataset (DatasetItemsTemplate): Dataset
 
         Returns:
             np.ndarray [samples, features]
         """
-        assert isinstance(dataset, np.ndarray)
+        assert isinstance(dataset, DatasetItemsTemplate)
 
-        with tqdm_joblib(tqdm(total=dataset.shape[1])) as _:
+        with tqdm_joblib(tqdm(total=dataset.num_samples)):
             db_histograms = Parallel(n_jobs=-1)(delayed(self.process_image)(
-                dataset[:, col].reshape([settings.IMAGE_WIDTH, settings.IMAGE_HEIGHT])) for col in range(dataset.shape[1]))
+                dataset.get_sample(col)) for col in range(dataset.num_samples))
 
         db_histograms = np.concatenate(db_histograms)
 

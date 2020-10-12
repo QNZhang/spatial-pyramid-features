@@ -5,7 +5,7 @@ import numpy as np
 
 import settings
 from core.feature_extractors import SpatialPyramidFeatures
-from utils.datasets.patchcamelyon import DBhandler, FeatsHandler
+from utils.datasets.handlers import InMemoryDBHandler, FeatsHandler, LazyDBHandler
 
 
 np.random.seed(settings.NUMPY_RANDOM_SEED)
@@ -18,12 +18,11 @@ def main():
 if __name__ == '__main__':
     main()
 
-    # train_feats, train_labels, test_feats, test_labels = DBhandler()()
-
     # FeatsHandler().create_subsets(20, True)
     # train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
 
-    spf = SpatialPyramidFeatures(DBhandler)
+    spf = SpatialPyramidFeatures(InMemoryDBHandler)
+    # spf = SpatialPyramidFeatures(LazyDBHandler)
     # func:create_codebook processed in 5602.9401 seconds
     # func:create_codebook processed in 5549.5434 seconds
     spf.create_codebook()
