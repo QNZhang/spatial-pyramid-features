@@ -19,7 +19,7 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 	mkdir datasets_dir
 	```
 
-4.  Copy or create a symbolink link to your dataset. e.g.:
+4.  Copy or create a symbolic link to your dataset. e.g.:
 
 	``` bash
 	cd datasets_dir
@@ -96,7 +96,16 @@ spf.create_spatial_pyramid_features()
 
 ### Load all train/test datasets in memory
 
-The JSON files must already contain all the image values/features
+The JSON files must contain all the image values/features so they can be loaded into numpy arrays with shape `(features, samples)`.
+
+The original width and size of the images must be set on your `settings.py` files:
+
+``` python
+IMAGE_WIDTH = 32  # original image with
+IMAGE_HEIGHT = 32  # original image height
+```
+
+Then you are ready to start using the handler.
 
 ```python
 from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
@@ -106,7 +115,7 @@ train_feats, train_labels, test_feats, test_labels = InMemoryDBHandler()()
 
 ### Load only image paths and access to them only when necessary
 
-The JSON files must have paths to the images
+The JSON files must have paths to the images which must be accessible from the project root directory. Thus, you can create a symbolic link or place your dataset directory in the project root directory to enable the image paths from the project root directory.
 
 ```python
 from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
