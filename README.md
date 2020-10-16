@@ -80,20 +80,6 @@ If you want to perform quick tests by using only a fraction of your dataset just
 
 ## Usage
 
-### Create spatial pyramid features
-``` python
-from core.feature_extractors import SpatialPyramidFeatures
-from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
-
-# For datasets completely contained in json files
-spf = SpatialPyramidFeatures(InMemoryDBHandler)
-# For datasets holding just paths to images in the JSON files
-spf = SpatialPyramidFeatures(LazyDBHandler)
-#
-spf.create_codebook()
-spf.create_spatial_pyramid_features()
-```
-
 ### Load all train/test datasets in memory
 
 The JSON files must contain all the image values/features so they can be loaded into numpy arrays with shape `(features, samples)`.
@@ -123,7 +109,23 @@ from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
 train_feats, train_labels, test_feats, test_labels = LazyDBHandler()()
 ```
 
+### Create spatial pyramid features
+``` python
+from core.feature_extractors import SpatialPyramidFeatures
+from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
+
+# For datasets completely contained in json files
+spf = SpatialPyramidFeatures(InMemoryDBHandler)
+# For datasets holding just paths to images in the JSON files
+spf = SpatialPyramidFeatures(LazyDBHandler)
+#
+spf.create_codebook()
+spf.create_spatial_pyramid_features()
+```
+
 ### Load spatial pyramid features
+Use this dataset handler to load all the spatial pyramid features created by this application
+
 
 ``` python
 from utils.datasets.handlers import FeatsHandler
@@ -132,10 +134,17 @@ train_feats, train_labels, test_feats, test_labels = FeatsHandler()()
 ```
 
 ### Create a subset of the spatial pyramid features dataset and load it
-``` python
 
+Use **`FeatsHandler().create_subsets`** to create subsets of the spatial pyramimd features training dataset considering the provided percentage as the percentage covered by the subset training dataset. Thus, the spatial pyramid features training dataset is splitted into `percentage`% for training and `100-percentage`% for testing.
+
+Then just load your feature subsets using the `FeatsHandler` along with the `percentage` of the training dataset used. E.g.:
+
+``` python
 from utils.datasets.handlers import FeatsHandler
 
+# Create a 20% training and 80% testing feature subdatasets
 FeatsHandler().create_subsets(percentage=20, verbose=True)
+
+# Load the created features subsets
 train_feats, train_labels, test_feats, test_labels = FeatsHandler(percentage=20, verbose=True)()
 ```

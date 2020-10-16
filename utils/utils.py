@@ -7,6 +7,14 @@ from sklearn.decomposition import PCA
 import settings
 
 
+def using_quick_tests():
+    """
+    Returns True if the app has been set to use a reduced dataset for
+    quick testing
+    """
+    return settings.QUICK_TESTS > 0
+
+
 def get_uint8_image(img):
     """
     Returns a ndarray of type uint8

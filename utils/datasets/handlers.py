@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split
 import settings
 from utils.datasets.items import InMemoryDatasetItems, LazyDatasetItems
 from utils.datasets.mixins import BaseDBHandlerMixin, DataTransformsMixin
+from utils.utils import using_quick_tests
 
 
 class BaseDBHandler(BaseDBHandlerMixin):
@@ -52,7 +53,7 @@ class BaseDBHandler(BaseDBHandlerMixin):
                 getattr(self, attr_name)['labels'] = np.array(data['labels'])
 
             # QuickTests
-            if settings.QUICK_TESTS > 0:
+            if using_quick_tests():
                 getattr(self, attr_name)['labels'] = \
                     getattr(self, attr_name)['labels'][:, :settings.QUICK_TESTS]
 
@@ -166,10 +167,13 @@ class FeatsHandler(DataTransformsMixin, BaseDBHandlerMixin):
 
     def create_subsets(self, percentage=20, verbose=False):
         """
-        Creates subsets of the training and testing datasets considering provided percentage
+        Creates subsets of the spatial pyramid features training dataset considering
+        the provided percentage as the percentage covered by the subset training dataset.
+        Thus, the features training dataset is splitted into 'percentage'% for training
+        and '100-percentage' % for testing.
 
         Args:
-            percentage (int): percentage of the dataset to use
+            percentage (int): percentage of the featues dataset to be used for the training subset
             verbose   (bool): whether to pring messages or not
         """
         assert 0 < percentage < 100
