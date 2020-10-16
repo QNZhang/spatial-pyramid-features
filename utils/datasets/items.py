@@ -6,6 +6,7 @@ from PIL import Image
 
 import settings
 from utils.datasets.templates import DatasetItemsTemplate
+from utils.utils import using_quick_tests
 
 
 class InMemoryDatasetItems(DatasetItemsTemplate):
@@ -24,7 +25,7 @@ class InMemoryDatasetItems(DatasetItemsTemplate):
         self.dataset = np.array(args[0])
 
         # QuickTests
-        if settings.QUICK_TESTS > 0:
+        if using_quick_tests():
             self.dataset = self.dataset[:, :settings.QUICK_TESTS]
 
     @property
@@ -61,7 +62,7 @@ class LazyDatasetItems(DatasetItemsTemplate):
         self.dataset = args[0]
 
         # QuickTests
-        if settings.QUICK_TESTS > 0:
+        if using_quick_tests():
             self.dataset = self.dataset[:settings.QUICK_TESTS]
 
         self.datase_num_samples = len(self.dataset)
