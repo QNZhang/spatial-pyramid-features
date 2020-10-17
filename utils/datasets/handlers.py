@@ -5,7 +5,7 @@ import json
 import os
 
 import numpy as np
-from gutils.numpy_.numpy_ import format_label_matrix
+from gutils.numpy_.numpy_ import LabelMatrixManager
 from sklearn.model_selection import train_test_split
 
 import settings
@@ -48,7 +48,8 @@ class BaseDBHandler(BaseDBHandlerMixin):
 
             # if it's not a 2D label matrix coded as JSON, then turn it into a 2D matrix
             if not isinstance(data['labels'][0], list):
-                getattr(self, attr_name)['labels'] = format_label_matrix(np.array(data['labels']))
+                getattr(self, attr_name)['labels'] = LabelMatrixManager.get_2d_matrix_from_1d_array(
+                    np.array(data['labels']))
             else:
                 getattr(self, attr_name)['labels'] = np.array(data['labels'])
 
@@ -196,7 +197,7 @@ class FeatsHandler(DataTransformsMixin, BaseDBHandlerMixin):
             )
             formatted_data = dict(
                 codes=xtrain.T.tolist(),
-                labels=format_label_matrix(ytrain).tolist()
+                labels=LabelMatrixManager.get_2d_matrix_from_1d_array(ytrain).tolist()
             )
             json.dump(formatted_data, file_)
 
@@ -216,6 +217,6 @@ class FeatsHandler(DataTransformsMixin, BaseDBHandlerMixin):
             )
             formatted_data = dict(
                 codes=xtrain.T.tolist(),
-                labels=format_label_matrix(ytrain).tolist()
+                labels=LabelMatrixManager.get_2d_matrix_from_1d_array(ytrain).tolist()
             )
             json.dump(formatted_data, file_)
