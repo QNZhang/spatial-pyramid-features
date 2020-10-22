@@ -258,11 +258,10 @@ class SpatialPyramidFeatures:
         test_histograms = self.__get_histograms(test_feats)
 
         if settings.PCA_N_COMPONENTS != -1:
-            # TODO: maybe I shouldn't apply PCA to train and test separately....
             print("Applying PCA to training spatial pyramid features")
-            train_histograms = apply_pca(train_histograms)
+            train_histograms, pca = apply_pca(train_histograms)
             print("Applying PCA to testing spatial pyramid features")
-            test_histograms = apply_pca(test_histograms)
+            test_histograms, _ = apply_pca(test_histograms, pca)
 
         for db_split, feats, labels in [
                 ('train', train_histograms, train_labels), ('test', test_histograms, test_labels)]:

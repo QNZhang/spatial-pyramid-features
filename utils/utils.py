@@ -57,17 +57,23 @@ def get_histogram_intersection(histogram_x, histogram_y):
     return np.minimum(histogram_x, histogram_y).sum()
 
 
-def apply_pca(dataset):
+def apply_pca(dataset, pca=None):
     """
     Applies PCA to the provided dataset
 
     Args:
-        dataset (np.ndarray): numpy array [samples, features]
+        dataset            (np.ndarray): numpy array [samples, features]
+        pca (sklearn.decomposition.PCA): fitted sklearn PCA instance
 
     Returns:
-        np.ndarray [samples, settings.PCA_N_COMPONENTS]
+        np.ndarray [samples, settings.PCA_N_COMPONENTS], sklearn.decomposition.PCA fitted instance
     """
-    return PCA(settings.PCA_N_COMPONENTS, random_state=settings.RANDOM_STATE).fit_transform(dataset)
+    if pca:
+        return pca.transform(dataset), pca
+
+    pca = PCA(settings.PCA_N_COMPONENTS, random_state=settings.RANDOM_STATE)
+
+    return pca.fit_transform(dataset), pca
 
 
 def create_15_scene_json_files(num_per_class=-1):
