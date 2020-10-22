@@ -4,46 +4,35 @@
 import cv2 as cv
 import numpy as np
 
-from gutils.image_processing import get_patches
-
 import settings
-from utils.utils import get_uint8_image
 
 
-def get_sift_descriptors(img, pyramid_levels=settings.PYRAMID_LEVELS):
+def get_sift_descriptors(img, keypoint_step_size=settings.KEYPOINTS_STEP_SIZE):
     """
-    Process an image using the especified patch_size and step_size; and returns its SIFT
-    descriptors
+    Gets the SIFT descriptors using the specified keypoint_step_size and returns them
 
     Args:
-        img     (np.ndarray): image loaded using numpy
-        pyramid_levels (int): number of pyramid levels to be used
-        patch_size     (int): size of the patchw
-        step_size      (int): stride
+        img         (np.ndarray): image loaded using numpy
+        keypoint_step_size (int): step size & keypoint diameter
 
     Returns:
-        np.array [num of key points, 128-SIFT descriptors]
+        np.array with shape (num of key points, 128-SIFT descriptors)
     """
     assert isinstance(img, np.ndarray)
-    assert isinstance(pyramid_levels, int)
-    assert min(img.shape[:2]) > 2**pyramid_levels, \
-        "the image dimensions {} must be bigger than 2**pyramid_levels"\
-        .format(str(img.shape[:2]))
+    assert min(img.shape[:2]) >= keypoint_step_size, \
+        "keypoint_step_size must be greater or equal to the width or height of the provided img"
 
     sift = cv.SIFT_create()
-    descriptors = list()
+    keypoints = [cv.KeyPoint(x, y, keypoint_step_size)
+                 for y in range(0, img.shape[0], keypoint_step_size)
+                 for x in range(0, img.shape[1], keypoint_step_size)]
+    kp, des = sift.compute(img, keypoints)
+    # kp, des = sift.detectAndCompute(img, None)
+    # kp_img = cv.drawKeypoints(img, kp, img, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+    # plt.imshow(kp_img)
+    # plt.show()
 
-    for level in range(pyramid_levels+1):
-        for patch in get_patches(get_uint8_image(img), img.shape[0]//2**level):
-            kp, des = sift.detectAndCompute(patch, None)
-            if des is not None:
-                # print('{} descriptors at level {}'.format(des.shape[0], level))
-                descriptors.append([des] if len(des.shape) == 1 else des)
-                # patch = cv.drawKeypoints(patch, kp, patch, flags=cv.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
-                # plt.imshow(patch)
-                # plt.show()
-
-    if descriptors:
-        return np.concatenate(descriptors)
+    if des is not None:
+        return des
 
     return np.empty([0, 128], dtype=np.float32)

@@ -71,12 +71,61 @@ If the image dataset does not have the grey-scale PIL format ('L', ), then each 
 
     `utils/datasets/items.py -> LazyDatasetItems.get_sample`
 
-### Quick runs/tests
+### Quick runs/tests while tweaking configuration and/or code
 If you want to perform quick tests by using only a fraction of your dataset just go to your `settings.py` file and set `QUICK_TESTS` with the number of samples you want to work with, e.g.:
 
 ```python
 	QUICK_TESTS = 1001
 ```
+
+Note that only the first 1001 samples will be used; it won't get a fixed number of samples per class. This feature is just to do quick test when changing the configuration (mainly to verify the processing time and RAM usage) or modifying the code (to verify that it still works)
+
+
+### Setting up 15-Scene dataset (start playing with the code!)
+
+Running the application using 15-Secene dataset is very simple:
+
+1. Download the 15-Scene dataset from any of these locations (or just google it)
+
+	1. [Ready to go option](https://github.com/TrungTVo/spatial-pyramid-matching-scene-recognition/tree/master/data). This one is ready to use.
+
+	2. [Download from figshare](https://figshare.com/articles/15-Scene_Image_Dataset/7007177)
+
+	3. [Download from Kaggle](https://www.kaggle.com/zaiyankhan/15scene-dataset)
+
+2. Split the dataset into train and test folders. If you are using the ready to go option this process is already done.
+
+3. Create a folder called `scene_data` in your project root and place your train and test folders there.
+
+4. Create the required dataset JSON files. Let us start working with 100 samples per class. Thus, the following code must be executed from the main.py file.
+	``` python
+	from utils.datasets.handlers import LazyDBHandler
+	from utils.utils import create_15_scene_json_files
+
+	create_15_scene_json_files(100)
+	train_feats, train_labels, test_feats, test_labels = LazyDBHandler()()
+	print(train_feats.num_samples, train_labels.shape, test_feats.num_samples, test_labels.shape)
+	```
+
+5. Create your codebook and spatial pyramid features
+   ``` python
+   from core.feature_extractors import SpatialPyramidFeatures
+   from utils.datasets.handlers import LazyDBHandler
+
+   spf = SpatialPyramidFeatures(LazyDBHandler)
+   spf.create_codebook()
+   spf.create_spatial_pyramid_features()
+   ```
+
+6. Evaluate the spatial pyramid features using Linear Support Vector Classification
+   ``` python
+   from utils.utils import FeaturesEvaluator
+
+   FeaturesEvaluator.apply_linear_svc()
+   FeaturesEvaluator.find_best_regularization_parameter()
+   ```
+
+	Using the default configuration you should get an accuracy close to 68.5%
 
 ## Usage
 
@@ -94,17 +143,17 @@ IMAGE_HEIGHT = 32  # original image height
 Then you are ready to start using the handler.
 
 ```python
-from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
+from utils.datasets.handlers import InMemoryDBHandler
 
 train_feats, train_labels, test_feats, test_labels = InMemoryDBHandler()()
 ```
 
-### Load only image paths and access to them only when necessary
+### Load only image paths and load them only when necessary
 
 The JSON files must have paths to the images which must be accessible from the project root directory. Thus, you can create a symbolic link or place your dataset directory in the project root directory to enable the image paths from the project root directory.
 
 ```python
-from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
+from utils.datasets.handlers import LazyDBHandler
 
 train_feats, train_labels, test_feats, test_labels = LazyDBHandler()()
 ```

@@ -3,7 +3,6 @@
 
 import os
 import json
-from collections import Counter
 from random import sample
 import warnings
 
@@ -15,6 +14,7 @@ from gutils.context_managers import tqdm_joblib
 from gutils.decorators import timing
 from gutils.image_processing import get_patches
 from gutils.numpy_.numpy_ import get_unique_rows
+# from gutils.numpy_.images import ZeroPadding
 from joblib import Parallel, delayed
 from sklearn.cluster import KMeans
 from skl2onnx import to_onnx
@@ -22,10 +22,11 @@ from tqdm import tqdm
 
 import settings
 from constants import Pooling
-from core.exceptions import PoolingMethodInvalid
+from core.exceptions import PoolingMethodInvalid, WrongSpatialPyramidSubregionsNumber
+from core.weighting_methods import WeightingMethod
 from utils.datasets.templates import DatasetItemsTemplate
 from utils.descriptors import get_sift_descriptors
-from utils.utils import get_uint8_image, apply_pca
+from utils.utils import get_uint8_image, apply_pca, using_quick_tests
 
 
 class SpatialPyramidFeatures:
@@ -43,31 +44,16 @@ class SpatialPyramidFeatures:
 
     def __init__(self, db_handler_class):
         """ Verifies the consistency in settings values and initializes the instance """
-        assert settings.PATCH_SIZE % 2**settings.PYRAMID_LEVELS == 0
+        assert settings.PATCH_SIZE % 2**settings.PYRAMID_LEVELS == 0 or settings.PATCH_SIZE <= 0
+        if using_quick_tests():
+            assert settings.PCA_N_COMPONENTS < settings.QUICK_TESTS
+
         self.db_handler_class = db_handler_class
 
-    @staticmethod
-    def get_spatial_pyramid_weight(current_level, total_levels=settings.PYRAMID_LEVELS):
-        """
-        Calculates and returns the weight spatial historgram weight for the current_level
-
-        Args:
-            current_level (int): current level to calculate
-            total_levels  (int): total number of levels to apply
-
-        Returns:
-            spatial historgram weight (float)
-        """
-        assert isinstance(current_level, int)
-        assert isinstance(total_levels, int)
-        assert total_levels >= current_level
-
-        if current_level == 0:
-            return 1/2**total_levels
-
-        return 1/2**(total_levels - current_level + 1)
-
-    def get_concatenated_weighted_histogram(self, img, pyramid_levels=settings.PYRAMID_LEVELS):
+    def get_concatenated_weighted_histogram(
+            self, img, pyramid_levels=settings.PYRAMID_LEVELS,
+            keypoint_step_size=settings.KEYPOINTS_STEP_SIZE
+    ):
         """
         Process an image considering the pyramid level specified and returns its long
         contatenated-weighted histogram using the SIFT descriptors
@@ -85,101 +71,79 @@ class SpatialPyramidFeatures:
             "the image dimensions {} must be bigger than 2**pyramid_levels"\
             .format(str(img.shape[:2]))
 
-        sift = cv.SIFT_create()
-        vector_length = round(settings.CHANNELS * (1/3) * (4**(pyramid_levels+1)-1))
-        histogram = np.zeros(vector_length, dtype=np.float32)
+        histogram = []
         codebook = self.load_codebook()
         input_name = codebook.get_inputs()[0].name
         label_name = codebook.get_outputs()[0].name
-        values_filled = 0
 
         for level in range(pyramid_levels+1):
-            weight = self.get_spatial_pyramid_weight(level, pyramid_levels)
-            grid_cells_counter = 0
+            weight = WeightingMethod.get_weighting_method(
+                settings.PYRAMID_FEATURE_WEIGHTING_METHOD)(level, pyramid_levels)
+            patches = list(get_patches(get_uint8_image(img), img.shape[1]//2**level, img.shape[0]//2**level))
 
-            for idx, patch in enumerate(get_patches(get_uint8_image(img), img.shape[0]//2**level)):
-                kp, des = sift.detectAndCompute(patch, None)
-                grid_cells_counter = idx + 1
+            if len(patches) != 2**(2*level):
+                raise WrongSpatialPyramidSubregionsNumber(2**(2*level), len(patches))
 
-                if des is not None:
+            for patch in patches:
+                des = get_sift_descriptors(patch, keypoint_step_size)
+
+                if des.shape[0] != 0:
                     des = des if des.dtype == np.float32 else des.astype(np.float32)
-                    # Pooling operation #######################################
+                    # ENCODED DESCRIPTORS POOLING OPERATIONS ##################
                     # NOTE: Because we're using kmeans to assing each SIFT descriptor
                     # to a class/cluster, all the encoded descriptors will be
                     # 1-D zero vectors with only one of their elements set to 1. e.g.:
                     # [0, 1, 0, 0, 0]
-                    # Thus, we don't need to create the encoded descriptor vector
-                    # representations to perform the pooling operations.
-                    # We can do that easily using the Counter and set python classes
-                    if settings.POOLING_METHOD == Pooling.SUM:
-                        des_counter = Counter([
-                            codebook.run([label_name], {input_name: [des[row]]})[0][0]
-                            for row in range(des.shape[0])
-                        ])
-                    elif settings.POOLING_METHOD == Pooling.MAX:
-                        des_counter = Counter(set(
-                            codebook.run([label_name], {input_name: [des[row]]})[0][0]
-                            for row in range(des.shape[0])
-                        ))
+                    # Thus, SUM pooling will return a vector quantization (histogram)
+                    # and MAX pooling will return a vector of ones and zeros
+                    if settings.ENCODED_DESCRIPTORS_POOLING_METHOD in (Pooling.SUM, Pooling.MAX):
+                        predictions = codebook.run([label_name], {input_name: des})[0]
+                        patch_histogram = np.bincount(predictions, minlength=settings.CHANNELS)\
+                                            .reshape(1, -1).ravel()
+
+                        if settings.ENCODED_DESCRIPTORS_POOLING_METHOD == Pooling.MAX:
+                            patch_histogram[np.nonzero(patch_histogram)] = 1
+
+                        histogram.append(weight*patch_histogram)
                     else:
                         raise PoolingMethodInvalid
 
-                    for channel_id, counter in des_counter.items():
-                        histogram[values_filled + idx + 2**(2*level) * channel_id] = counter * weight
-
-            values_filled += grid_cells_counter * settings.CHANNELS
-
-        return histogram
+        return np.concatenate(histogram)
 
     def process_image(self, img, pyramid_levels=settings.PYRAMID_LEVELS,
-                      patch_size=settings.PATCH_SIZE, step_size=settings.STEP_SIZE):
+                      keypoint_step_size=settings.KEYPOINTS_STEP_SIZE):
         """
-        Process an image using mini-patches, calculates its overall concatenated-weighted
-        histogram using the specified pyramid level and SIFT descriptors, and finally
-        returns its Lp normalised version
+        Process an image using the pyramid_levels especified, and returns its normalized
+        spatial pyramid features
 
         Args:
-            img     (np.ndarray): image loaded using numpy
-            pyramid_levels (int): number of pyramid levels to be used
-            patch_size     (int): size of the patchw
-            step_size      (int): stride
+            img         (np.ndarray): image loaded using numpy
+            pyramid_levels     (int): number of pyramid levels to be used
+            keypoint_step_size (int): step size & keypoint diameter
 
         Returns:
             [np.ndarray] with length = round(channels * (1/3) * (4**(pyramid_levels+1)-1))]
         """
         assert isinstance(img, np.ndarray)
         assert isinstance(pyramid_levels, int)
-        assert img.shape[0] >= patch_size
-        assert img.shape[1] >= patch_size
-        assert step_size > 0
 
-        descriptors = list()
+        histogram = self.get_concatenated_weighted_histogram(
+            settings.TWEAK_IMAGE_METHOD(img, pyramid_levels), pyramid_levels, keypoint_step_size)
 
-        for patch in get_patches(img, patch_size, patch_overlapping=patch_size-step_size):
-            descriptors.append([self.get_concatenated_weighted_histogram(patch, pyramid_levels)])
-
-        descriptors = np.concatenate(descriptors)
-
-        overall_histogram = np.sum(descriptors, axis=0)
-
-        if np.count_nonzero(overall_histogram) == 0:
+        if np.count_nonzero(histogram) == 0:
             warnings.warn('An image without feature descriptors was processed', UserWarning)
-            return [overall_histogram]
+            return [histogram]
 
-        lp_norm = np.linalg.norm(overall_histogram, settings.NORM)
-
-        if lp_norm in (0, 1, np.nan):
-            return [overall_histogram]
-
-        return [overall_histogram/lp_norm]
+        return [settings.NORMALIZATION(histogram)]
 
     @timing
     def create_codebook(
             self,
             patches_percentage=settings.CODEBOOK_PATCHES_PERCENTAGE,
-            pyramid_levels=settings.PYRAMID_LEVELS,
             patch_size=settings.PATCH_SIZE,
-            step_size=settings.STEP_SIZE, save=True
+            step_size=settings.PATCH_STEP_SIZE,
+            keypoint_step_size=settings.CODEBOOK_CREATION_KEYPOINTS_STEP_SIZE,
+            save=True
     ):
         """
         Trains a Kmeans classifier/codebook using a percentage of the trainig featues and
@@ -187,9 +151,9 @@ class SpatialPyramidFeatures:
 
         Args:
             patches_percentage  (float): percentage of patches to be used to build the codebook
-            pyramid_levels        (int): number of pyramid levels to be used
             patch_size            (int): size of the patch
-            step_size             (int): stride
+            step_size             (int): patch stride
+            keypoint_step_size    (int): step size & keypoint diameter
             save                 (bool): persist the model in a ONNX file
 
         Returns:
@@ -200,16 +164,21 @@ class SpatialPyramidFeatures:
 
         training_feats = self.db_handler_class(True)()[0]
 
-        def process_column(patch_size, step_size, img, pyramid_levels):
+        def process_column(patch_size, step_size, img):
             all_descriptors = []
-            patches = [i for i in get_patches(
-                img, patch_size, patch_overlapping=patch_size-step_size)]
 
-            for patch in sample(patches, round(len(patches) * patches_percentage)):
-                descriptors = get_sift_descriptors(patch, pyramid_levels)
-                if descriptors.any():
-                    descriptors = get_unique_rows(descriptors)
-                    all_descriptors.append(descriptors)
+            if patch_size > 0:
+                patches = [i for i in get_patches(
+                    img, patch_size, patch_overlapping=patch_size-step_size)]
+
+                for patch in sample(patches, round(len(patches) * patches_percentage)):
+                    descriptors = get_sift_descriptors(patch, keypoint_step_size)
+
+                    if descriptors.any():
+                        all_descriptors.append(descriptors)
+
+            else:
+                all_descriptors = [get_sift_descriptors(img, keypoint_step_size)]
 
             if all_descriptors:
                 return np.concatenate(all_descriptors)
@@ -218,7 +187,7 @@ class SpatialPyramidFeatures:
 
         with tqdm_joblib(tqdm(desc="Processing images", total=training_feats.num_samples)):
             descriptors_list = Parallel(n_jobs=-1)(delayed(process_column)(
-                patch_size, step_size, training_feats.get_sample(col), pyramid_levels) for col in range(training_feats.num_samples))
+                patch_size, step_size, training_feats.get_sample(col)) for col in range(training_feats.num_samples))
 
         if not descriptors_list:
             warnings.warn(
@@ -226,6 +195,9 @@ class SpatialPyramidFeatures:
             return None
 
         selected_descriptors = np.concatenate(descriptors_list)
+        print("{} descriptors found".format(selected_descriptors.shape[0]))
+        selected_descriptors = get_unique_rows(selected_descriptors)
+        print("{} unique descriptors".format(selected_descriptors.shape[0]))
 
         print("Training KMeans classifer...")
         kmeans = KMeans(n_clusters=settings.CHANNELS, random_state=settings.RANDOM_STATE,
@@ -246,11 +218,9 @@ class SpatialPyramidFeatures:
 
     @staticmethod
     def load_codebook():
-        """ Loads and returns the codebook """
-        sess = rt.InferenceSession(
+        """ Loads the ONNX file and returns the codebook """
+        return rt.InferenceSession(
             os.path.join(settings.GENERATED_DATA_DIRECTORY, settings.CODEBOOK_ONNX))
-
-        return sess
 
     def __get_histograms(self, dataset):
         """
@@ -288,7 +258,10 @@ class SpatialPyramidFeatures:
         test_histograms = self.__get_histograms(test_feats)
 
         if settings.PCA_N_COMPONENTS != -1:
+            # TODO: maybe I shouldn't apply PCA to train and test separately....
+            print("Applying PCA to training spatial pyramid features")
             train_histograms = apply_pca(train_histograms)
+            print("Applying PCA to testing spatial pyramid features")
             test_histograms = apply_pca(test_histograms)
 
         for db_split, feats, labels in [

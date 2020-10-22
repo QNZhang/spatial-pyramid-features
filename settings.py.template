@@ -3,7 +3,10 @@
 
 import os
 
-from constants import Norm, Pooling
+from constants import Pooling
+from core.weighting_methods import WeightingMethod
+from utils.images import TweakImage
+from utils.normalization import Normalization
 
 
 ###############################################################################
@@ -15,12 +18,12 @@ DATASETS_DIRECTORY = "datasets_dir"
 TRAINING_DATA_DIRECTORY_DATASET_PATH = os.path.join(
     DATASETS_DIRECTORY,
     'patchcamelyon',
-    'my_raw_dataset_train.json'
+    'scene_train.json'
 )
 TESTING_DATA_DIRECTORY_DATASET_PATH = os.path.join(
     DATASETS_DIRECTORY,
     'patchcamelyon',
-    'my_raw_dataset_test.json'
+    'scene_test.json'
 )
 
 ###############################################################################
@@ -30,12 +33,28 @@ GENERATED_DATA_DIRECTORY = "tmp"
 GENERATED_FEATS_FILENAME_TEMPLATE = 'spatial_pyramid_feats_{}.json'
 CODEBOOK_ONNX = 'codebook.onnx'
 # percentage of patches to be used to build the codebook
-CODEBOOK_PATCHES_PERCENTAGE = .5
+CODEBOOK_PATCHES_PERCENTAGE = 1.0  # 0 < value <= 1.
 
-CHANNELS = 200  # number of features types
+# Step size & keypoint diameter used when creating the codebook. It must be
+# bigger or equal than the smallest spatial pyramid cell
+# WARNING: Do not decrease this number too much or you may run out of RAM
+#          (loads of SIFT descriptors will be loaded into memory)
+CODEBOOK_CREATION_KEYPOINTS_STEP_SIZE = 16
+
+# Step size & keypoint diameter used when extracting the spatial pyramid features
+KEYPOINTS_STEP_SIZE = 2
+
+CHANNELS = 200  # number of features types or kmeans clusters
 PYRAMID_LEVELS = 2
-PATCH_SIZE = 16  # make sure that PATCH_SIZE % 2**PYRAMID_LEVELS == 0
-STEP_SIZE = 8
+
+# For more options see core.weighting_methods.WeightingMethod
+PYRAMID_FEATURE_WEIGHTING_METHOD = WeightingMethod.GENERAL_WEIGHTING
+
+# When building the codebook you can set PATCH_SIZE TO -1 to not
+# use mini paches when extracting sift descriptors. Thus, keypoints
+# will be set all over the image and not per mini-patch
+PATCH_SIZE = -1  # 16  # make sure that PATCH_SIZE % 2**PYRAMID_LEVELS == 0
+PATCH_STEP_SIZE = 16  # PATCH_SIZE == PATCH_STEP_SIZE means no patch overlapping
 
 # Used to reconstruct the original image shape
 # on utils/datasets/items.py -> InMemoryDatasetItems.get_sample
@@ -44,11 +63,12 @@ IMAGE_HEIGHT = 32  # original image height
 
 NUMPY_RANDOM_SEED = 0
 RANDOM_STATE = 42
-PCA_N_COMPONENTS = 1000  # set to -1 to not apply PCA
+PCA_N_COMPONENTS = -1  # 3000  # 1000  # set to -1 to not apply PCA
 
-POOLING_METHOD = Pooling.SUM  # For more options see contants.py
+ENCODED_DESCRIPTORS_POOLING_METHOD = Pooling.SUM  # For more options see contants.py
+TWEAK_IMAGE_METHOD = TweakImage.get_adjusted_image  # For more options see gutils/images.py
 # Norm used during normalization
-NORM = Norm.L1  # For more options see contants.py
+NORMALIZATION = Normalization.standard  # For more options see utils/normalization.py
 KMEANS_VERBOSE = 1  # set it to 0 not print kmeans progress
 
 # Quick tests
@@ -58,4 +78,5 @@ KMEANS_VERBOSE = 1  # set it to 0 not print kmeans progress
 # + QUICK_TESTS, you can use a number > CHANNELS (this condition is not mandatory)
 # + CODEBOOK_PATCHES_PERCENTAGE you can increase it and decrease the QUICK_TESTS number
 # + PCA_N_COMPONENTS can be reduced
+# + PCA_N_COMPONENTS < QUICK_TESTS (it's a must!)
 QUICK_TESTS = -1  # 1001

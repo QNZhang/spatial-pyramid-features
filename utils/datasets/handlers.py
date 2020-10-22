@@ -16,11 +16,10 @@ from utils.utils import using_quick_tests
 
 class BaseDBHandler(BaseDBHandlerMixin):
     """
-    Base database handler (NOT TO BE USED DIRECTLY)
-
-
-
-    The shape of the returned lables arrays are
+    Base database handler providing only general intialization
+    functionality. DO NOT USE IT DIRECTLY, you must use this class to
+    create a Dataset handler that defines how to load and return the features
+    properly
 
     Usage:
         train_feats, train_labels, test_feats, test_labels = DBhandler()()
@@ -28,8 +27,8 @@ class BaseDBHandler(BaseDBHandlerMixin):
     Inspired on: https://github.com/giussepi/INCREMENTAL-LC-KSVD/blob/master/utils/datasets/patchcamelyon.py
 
     Returns:
-        feats (list of lists)
-        labels (np.ndarray) with shape [num labels, num samples]
+        train/test feats (list of lists)
+        train/test labels (np.ndarray) with shape [num labels, num samples]
     """
 
     def __init__(self, verbose=False):
