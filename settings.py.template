@@ -68,7 +68,7 @@ PCA_N_COMPONENTS = -1  # 3000  # 1000  # set to -1 to not apply PCA
 ENCODED_DESCRIPTORS_POOLING_METHOD = Pooling.SUM  # For more options see contants.py
 TWEAK_IMAGE_METHOD = TweakImage.get_adjusted_image  # For more options see gutils/images.py
 # Norm used during normalization
-NORMALIZATION = Normalization.standard  # For more options see utils/normalization.py
+NORMALIZATION = Normalization.standardization  # For more options see utils/normalization.py
 KMEANS_VERBOSE = 1  # set it to 0 not print kmeans progress
 
 # Quick tests

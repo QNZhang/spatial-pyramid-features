@@ -44,11 +44,11 @@ class TestNormalization(unittest.TestCase):
             )
         )
 
-    def test_standard(self):
+    def test_standardization(self):
         dev = np.std(self.vector)
         self.assertTrue(
             np.array_equal(
-                Normalization.standard(self.vector),
+                Normalization.standardization(self.vector),
                 (self.vector-np.mean(self.vector))/dev
             )
         )

@@ -70,7 +70,7 @@ class Normalization:
         return cls.lp(vector, 2)
 
     @staticmethod
-    def standard(vector):
+    def standardization(vector):
         """
         Returns normalized vector following the formula: (vector - mean) / std
 
