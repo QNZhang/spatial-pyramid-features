@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-""" utils/test/test_normalization """
+""" spfs/utils/test/test_normalization """
 
 import unittest
 
 import numpy as np
 
-from utils.normalization import Normalization
+from spfs.utils.normalization import Normalization
 
 
 class TestNormalization(unittest.TestCase):

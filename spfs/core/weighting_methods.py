@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" core/weighting_methods """
+""" spfs/core/weighting_methods """
 
 
 class WeightingMethod:

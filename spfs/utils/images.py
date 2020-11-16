@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/images """
+""" spfs/utils/images """
 
 from gutils.numpy_.images import ZeroPadding
 

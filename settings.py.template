@@ -3,10 +3,10 @@
 
 import os
 
-from constants import Pooling
-from core.weighting_methods import WeightingMethod
-from utils.images import TweakImage
-from utils.normalization import Normalization
+from spfs.constants import Pooling
+from spfs.core.weighting_methods import WeightingMethod
+from spfs.utils.images import TweakImage
+from spfs.utils.normalization import Normalization
 
 
 ###############################################################################

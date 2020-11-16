@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/datasets/handlers """
+""" spfs/utils/datasets/handlers """
 
 import json
 import os
@@ -9,9 +9,9 @@ from gutils.numpy_.numpy_ import LabelMatrixManager
 from sklearn.model_selection import train_test_split
 
 import settings
-from utils.datasets.items import InMemoryDatasetItems, LazyDatasetItems
-from utils.datasets.mixins import BaseDBHandlerMixin, DataTransformsMixin
-from utils.utils import using_quick_tests
+from spfs.utils.datasets.items import InMemoryDatasetItems, LazyDatasetItems
+from spfs.utils.datasets.mixins import BaseDBHandlerMixin, DataTransformsMixin
+from spfs.utils.utils import using_quick_tests
 
 
 class BaseDBHandler(BaseDBHandlerMixin):

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/utils """
+""" spfs/utils/utils """
 
 import os
 import json
@@ -146,7 +146,7 @@ class FeaturesEvaluator:
             assert isinstance(test_labels, np.ndarray)
 
         # avoiding circular reference
-        from utils.datasets.handlers import FeatsHandler  # pylint: disable=import-outside-toplevel
+        from spfs.utils.datasets.handlers import FeatsHandler  # pylint: disable=import-outside-toplevel
 
         if train_feats is None and train_labels is None and test_feats is None and \
            test_labels is None:
@@ -178,7 +178,7 @@ class FeaturesEvaluator:
             step        (float): step used when going through the interval
         """
         # avoiding circular reference
-        from utils.datasets.handlers import FeatsHandler  # pylint: disable=import-outside-toplevel
+        from spfs.utils.datasets.handlers import FeatsHandler  # pylint: disable=import-outside-toplevel
 
         train_feats, train_labels, test_feats, test_labels = FeatsHandler(verbose=True)()
         best_values = dict(c=-1, acc=0)

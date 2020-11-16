@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/datasets/mixins """
+""" spfs/utils/datasets/mixins """
 
 import numpy as np
 

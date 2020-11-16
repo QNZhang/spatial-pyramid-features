@@ -5,6 +5,10 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 
 ## INSTALLATION
 
+You can clone or install this application as a package.
+
+### Clone and configure
+
 
 1. Create virtual environment (recommended) and activate it
 
@@ -64,12 +68,30 @@ Python implementation of the [spatial pyramid features](https://ieeexplore.ieee.
 	cp settings.py.template settings.py
 	```
 
+### Installing the package
+
+Add to your requirements file
+
+`spfs @ https://github.com/giussepi/spatial-pyramid-features/tarball/master`
+
+or run
+
+```bash
+pip install git+git://github.com/giussepi/spatial-pyramid-features.git --use-feature=2020-resolver --no-cache-dir
+
+# or
+
+pip install https://github.com/giussepi/spatial-pyramid-features/tarball/master  --use-feature=2020-resolver --no-cache-dir
+```
+
+After installing the package you still need to follow the installation steps described previously but starting from the step 3. For the step 5, remember to download or copy the file `settings.py.template` from this repository.
+
 ## Important notes
 
 ### Grey-scale images
 If the image dataset does not have the grey-scale PIL format ('L', ), then each sample will be automatically converted (in memory) before any processing. This behaviour is defined at:
 
-    `utils/datasets/items.py -> LazyDatasetItems.get_sample`
+    `spfs/utils/datasets/items.py -> LazyDatasetItems.get_sample`
 
 ### Quick runs/tests while tweaking configuration and/or code
 If you want to perform quick tests by using only a fraction of your dataset just go to your `settings.py` file and set `QUICK_TESTS` with the number of samples you want to work with, e.g.:
@@ -99,8 +121,8 @@ Running the application using 15-Secene dataset is very simple:
 
 4. Create the required dataset JSON files. Let us start working with 100 samples per class. Thus, the following code must be executed from the main.py file.
 	``` python
-	from utils.datasets.handlers import LazyDBHandler
-	from utils.utils import create_15_scene_json_files
+	from spfs.utils.datasets.handlers import LazyDBHandler
+	from spfs.utils.utils import create_15_scene_json_files
 
 	create_15_scene_json_files(100)
 	train_feats, train_labels, test_feats, test_labels = LazyDBHandler()()
@@ -109,8 +131,8 @@ Running the application using 15-Secene dataset is very simple:
 
 5. Create your codebook and spatial pyramid features
    ``` python
-   from core.feature_extractors import SpatialPyramidFeatures
-   from utils.datasets.handlers import LazyDBHandler
+   from spfs.core.feature_extractors import SpatialPyramidFeatures
+   from spfs.utils.datasets.handlers import LazyDBHandler
 
    spf = SpatialPyramidFeatures(LazyDBHandler)
    spf.create_codebook()
@@ -119,7 +141,7 @@ Running the application using 15-Secene dataset is very simple:
 
 6. Evaluate the spatial pyramid features using Linear Support Vector Classification
    ``` python
-   from utils.utils import FeaturesEvaluator
+   from spfs.utils.utils import FeaturesEvaluator
 
    FeaturesEvaluator.apply_linear_svc()
    FeaturesEvaluator.find_best_regularization_parameter()
@@ -143,7 +165,7 @@ IMAGE_HEIGHT = 32  # original image height
 Then you are ready to start using the handler.
 
 ```python
-from utils.datasets.handlers import InMemoryDBHandler
+from spfs.utils.datasets.handlers import InMemoryDBHandler
 
 train_feats, train_labels, test_feats, test_labels = InMemoryDBHandler()()
 ```
@@ -153,15 +175,15 @@ train_feats, train_labels, test_feats, test_labels = InMemoryDBHandler()()
 The JSON files must have paths to the images which must be accessible from the project root directory. Thus, you can create a symbolic link or place your dataset directory in the project root directory to enable the image paths from the project root directory.
 
 ```python
-from utils.datasets.handlers import LazyDBHandler
+from spfs.utils.datasets.handlers import LazyDBHandler
 
 train_feats, train_labels, test_feats, test_labels = LazyDBHandler()()
 ```
 
 ### Create spatial pyramid features
 ``` python
-from core.feature_extractors import SpatialPyramidFeatures
-from utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
+from spfs.core.feature_extractors import SpatialPyramidFeatures
+from spfs.utils.datasets.handlers import InMemoryDBHandler, LazyDBHandler
 
 # For datasets completely contained in json files
 spf = SpatialPyramidFeatures(InMemoryDBHandler)
@@ -177,7 +199,7 @@ Use this dataset handler to load all the spatial pyramid features created by thi
 
 
 ``` python
-from utils.datasets.handlers import FeatsHandler
+from spfs.utils.datasets.handlers import FeatsHandler
 
 train_feats, train_labels, test_feats, test_labels = FeatsHandler()()
 ```
@@ -189,7 +211,7 @@ Use **`FeatsHandler().create_subsets`** to create subsets of the spatial pyramim
 Then just load your feature subsets using the `FeatsHandler` along with the `percentage` of the training dataset used. E.g.:
 
 ``` python
-from utils.datasets.handlers import FeatsHandler
+from spfs.utils.datasets.handlers import FeatsHandler
 
 # Create a 20% training and 80% testing feature subdatasets
 FeatsHandler().create_subsets(percentage=20, verbose=True)

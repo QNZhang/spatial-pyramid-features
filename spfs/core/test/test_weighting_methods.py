@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-""" core/test_weighting_methods """
+""" spfs/core/test_weighting_methods """
 
 import unittest
 
-from core.weighting_methods import WeightingMethod
+from spfs.core.weighting_methods import WeightingMethod
 
 
 class TestWeightingMethod(unittest.TestCase):

@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
-""" core/test/test_exceptions """
+""" spfs/core/test/test_exceptions """
 
 import unittest
 
-from core.exceptions import PoolingMethodInvalid, WrongSpatialPyramidSubregionsNumber
+from spfs.core.exceptions import PoolingMethodInvalid, WrongSpatialPyramidSubregionsNumber
 
 
 class TestPoolingMethodInvalid(unittest.TestCase):

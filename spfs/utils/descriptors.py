@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/descriptors """
+""" spfs/utils/descriptors """
 
 import cv2 as cv
 import numpy as np

@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-""" utils/datasets/items """
+""" spfs/utils/datasets/items """
 
 import numpy as np
 from PIL import Image
 
 import settings
-from utils.datasets.templates import DatasetItemsTemplate
-from utils.utils import using_quick_tests
+from spfs.utils.datasets.templates import DatasetItemsTemplate
+from spfs.utils.utils import using_quick_tests
 
 
 class InMemoryDatasetItems(DatasetItemsTemplate):

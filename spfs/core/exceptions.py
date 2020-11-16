@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" core/exceptions """
+""" spfs/core/exceptions """
 
 
 class PoolingMethodInvalid(Exception):

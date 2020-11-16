@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" core/feature_extractors """
+""" spfs/core/feature_extractors """
 
 import os
 import json
@@ -21,12 +21,12 @@ from skl2onnx import to_onnx
 from tqdm import tqdm
 
 import settings
-from constants import Pooling
-from core.exceptions import PoolingMethodInvalid, WrongSpatialPyramidSubregionsNumber
-from core.weighting_methods import WeightingMethod
-from utils.datasets.templates import DatasetItemsTemplate
-from utils.descriptors import get_sift_descriptors
-from utils.utils import get_uint8_image, apply_pca, using_quick_tests
+from spfs.constants import Pooling
+from spfs.core.exceptions import PoolingMethodInvalid, WrongSpatialPyramidSubregionsNumber
+from spfs.core.weighting_methods import WeightingMethod
+from spfs.utils.datasets.templates import DatasetItemsTemplate
+from spfs.utils.descriptors import get_sift_descriptors
+from spfs.utils.utils import get_uint8_image, apply_pca, using_quick_tests
 
 
 class SpatialPyramidFeatures:

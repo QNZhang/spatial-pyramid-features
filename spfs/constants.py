@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""constants"""
+"""spfs/constants"""
 
 
 class Pooling:

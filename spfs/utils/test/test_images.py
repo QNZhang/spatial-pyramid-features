@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-""" utils/test/test_images """
+""" spfs/utils/test/test_images """
 
 import unittest
 
 import numpy as np
 
-from utils.images import TweakImage
+from spfs.utils.images import TweakImage
 
 
 class TestTweakImage(unittest.TestCase):

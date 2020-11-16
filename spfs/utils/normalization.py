@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-""" utils/normalization """
+""" spfs/utils/normalization """
 
 import numpy as np
 
