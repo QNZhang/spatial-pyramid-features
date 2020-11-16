@@ -1,5 +1,5 @@
 autopep8>=1.5.4
-git+git://github.com/giussepi/gutils.git
+gutils @ https://github.com/giussepi/gutils/tarball/master
 ipython>=7.16.1
 jedi>=0.17.2
 joblib==0.16.0
